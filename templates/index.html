@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-Powered Diabetic Retinopathy Diagnostic Platform using fine-tuned EfficientNet-B6 and Grad-CAM localized heatmaps.">
+    <title>RetinaNet | Diabetic Retinopathy Detection Platform</title>
+    
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Chart.js for premium interactive charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom Modular CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- Authentication Overlay Modal (RBAC Guard) -->
+    <div id="auth-modal" class="auth-overlay active">
+        <div class="auth-card glass">
+            <div class="auth-header">
+                <div class="logo-glowing">
+                    <i data-lucide="eye" class="icon-pulse"></i>
+                </div>
+                <h2>RetinaNet Platform</h2>
+                <p>Clinical Inference & Diagnostic Environment</p>
+            </div>
+            <form id="auth-form">
+                <div class="form-group">
+                    <label for="username">Clinician Name</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="user"></i>
+                        <input type="text" id="username" placeholder="Dr. Sarah Jenkins" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="user-role">Access Authorization Role</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="shield-check"></i>
+                        <select id="user-role">
+                            <option value="Ophthalmologist">Ophthalmologist (Full Review & Diagnosis)</option>
+                            <option value="Technician">Technician (Scan & Upload Only)</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" id="login-btn">
+                    <span>Authorize System Access</span>
+                    <i data-lucide="arrow-right"></i>
+                </button>
+            </form>
+            <div class="auth-footer">
+                <p><i data-lucide="lock" class="small-icon"></i> Secured with AES-256 RBAC Guards</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Platform Grid Layout -->
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass">
+            <div class="sidebar-brand">
+                <div class="brand-logo">
+                    <i data-lucide="eye"></i>
+                </div>
+                <div class="brand-name">
+                    <h1>RetinaNet</h1>
+                    <span>EfficientNet-B6 v1.0</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="workspace" id="nav-workspace-btn">
+                    <i data-lucide="activity"></i>
+                    <span>Diagnostic Workspace</span>
+                </button>
+                <button class="nav-item" data-tab="analytics" id="nav-analytics-btn">
+                    <i data-lucide="bar-chart-3"></i>
+                    <span>Historic Analytics</span>
+                </button>
+                <button class="nav-item" data-tab="database" id="nav-database-btn">
+                    <i data-lucide="database"></i>
+                    <span>Screening Database</span>
+                </button>
+            </nav>
+            
+            <!-- User Status Panel -->
+            <div class="sidebar-user">
+                <div class="user-avatar" id="user-avatar-tag">OP</div>
+                <div class="user-info">
+                    <h4 id="user-display-name">Dr. Jenkins</h4>
+                    <span id="user-display-role">Ophthalmologist</span>
+                </div>
+                <button class="logout-btn" id="logout-btn" title="Sign Out">
+                    <i data-lucide="log-out"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Viewport -->
+        <main class="viewport">
+            
+            <!-- Dynamic Header -->
+            <header class="view-header">
+                <div class="header-titles">
+                    <h2 id="view-title">Diagnostic Workspace</h2>
+                    <p id="view-subtitle">Upload fundus imaging to initiate model classification & Grad-CAM visualization.</p>
+                </div>
+                <div class="header-actions">
+                    <div class="status-indicator-badge">
+                        <span class="pulse-dot"></span>
+                        <span>Model: EfficientNet-B6 Fine-Tuned (Kappa: 0.9124)</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content Screens -->
+            <div class="screen-container">
+                
+                <!-- SCREEN 1: Workspace Tab -->
+                <section class="dashboard-screen active" id="screen-workspace">
+                    <div class="workspace-grid">
+                        
+                        <!-- Left Panel: Upload and Blended Canvas -->
+                        <div class="workspace-left">
+                            
+                            <!-- Dropzone View -->
+                            <div class="card glass dropzone-card" id="dropzone-area">
+                                <div class="dropzone-content">
+                                    <div class="upload-icon-pulse">
+                                        <i data-lucide="upload-cloud"></i>
+                                    </div>
+                                    <h3>Retinal Fundus Upload</h3>
+                                    <p class="dropzone-hint">Drag & drop PNG/JPG retinal scans, or click to browse</p>
+                                    <span class="file-limits">Supports high-res circle-cropped fundus morphology images</span>
+                                    <input type="file" id="file-uploader" accept="image/*" class="hidden-input">
+                                </div>
+                            </div>
+                            
+                            <!-- Interactive Canvas Blended Workspace (Active once image is uploaded) -->
+                            <div class="card glass canvas-card hidden" id="canvas-workspace">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <i data-lucide="layers"></i>
+                                        <span>Grad-CAM Morphological Blend Workspace</span>
+                                    </div>
+                                    <div class="canvas-actions">
+                                        <button class="btn-icon" id="btn-zoom-in" title="Zoom In"><i data-lucide="zoom-in"></i></button>
+                                        <button class="btn-icon" id="btn-zoom-out" title="Zoom Out"><i data-lucide="zoom-out"></i></button>
+                                        <button class="btn-icon" id="btn-zoom-reset" title="Fit to Screen"><i data-lucide="maximize-2"></i></button>
+                                    </div>
+                                </div>
+                                
+                                <div class="canvas-wrapper">
+                                    <!-- Double layer interactive rendering -->
+                                    <canvas id="blended-canvas"></canvas>
+                                </div>
+                                
+                                <div class="canvas-controls">
+                                    <div class="control-group opacity-control">
+                                        <label for="opacity-slider">Grad-CAM Opacity Overlay: <span id="opacity-val">60%</span></label>
+                                        <div class="slider-wrapper">
+                                            <span>0%</span>
+                                            <input type="range" id="opacity-slider" min="0" max="100" value="60">
+                                            <span>100%</span>
+                                        </div>
+                                    </div>
+                                    <button class="btn-secondary" id="btn-reset-workspace">
+                                        <i data-lucide="refresh-cw"></i>
+                                        <span>Clear Scan</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Inference Output Metrics -->
+                        <div class="workspace-right">
+                            
+                            <!-- Inference Status Card -->
+                            <div class="card glass inference-card" id="inference-results-card">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <i data-lucide="cpu"></i>
+                                        <span>Inference Inference Output</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- State A: No Upload Yet -->
+                                <div class="result-state-empty" id="result-empty">
+                                    <i data-lucide="eye-off"></i>
+                                    <p>Awaiting upload scan. Select a patient retina image to begin real-time analysis pipeline.</p>
+                                </div>
+                                
+                                <!-- State B: Processing/Pending Indicator -->
+                                <div class="result-state-loading hidden" id="result-loading">
+                                    <div class="spinner-scanner">
+                                        <div class="scan-laser"></div>
+                                        <div class="scanner-circle"></div>
+                                    </div>
+                                    <h4 id="inference-step-title">Analyzing Morphology...</h4>
+                                    <p id="inference-step-subtitle">Executing circular cropping and Ben Graham contrast enhancement.</p>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-bar" id="inference-progress-bar"></div>
+                                    </div>
+                                </div>
+
+                                <!-- State C: SUCCESS (Diagnosis displays here) -->
+                                <div class="result-state-success hidden" id="result-success">
+                                    <div class="diagnosis-header">
+                                        <div class="diagnosis-badge" id="diag-badge-grade">Grade 0</div>
+                                        <h3 id="diag-label-name">No Diabetic Retinopathy</h3>
+                                    </div>
+                                    
+                                    <div class="metric-segment">
+                                        <div class="metric-row">
+                                            <span>Confidence Level</span>
+                                            <span class="metric-valueHighlight" id="diag-confidence">98.56%</span>
+                                        </div>
+                                        <div class="progress-container">
+                                            <div class="progress-bar-fill" id="diag-confidence-bar"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pathologies-segment">
+                                        <h4>Pathological Signs Detected</h4>
+                                        <div id="pathologies-tags-container" class="tags-container">
+                                            <!-- Dynamic Tags inserted here -->
+                                        </div>
+                                    </div>
+
+                                    <div class="actions-segment">
+                                        <button class="btn-primary w-full" id="btn-save-diagnostics">
+                                            <i data-lucide="check-circle-2"></i>
+                                            <span>Verify & Commit Diagnosis</span>
+                                        </button>
+                                        <button class="btn-secondary w-full mt-2" id="btn-export-report">
+                                            <i data-lucide="download"></i>
+                                            <span>Download Clinical Report (PDF)</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Help / Guidelines Overlay -->
+                            <div class="card glass tips-card">
+                                <h3>Classification Guide</h3>
+                                <div class="guide-list">
+                                    <div class="guide-item"><span class="grade-marker grade-0">0</span> <strong>No DR</strong>: Clear fundus, no vascular lesions.</div>
+                                    <div class="guide-item"><span class="grade-marker grade-1">1</span> <strong>Mild NPDR</strong>: Isolated microaneurysms present.</div>
+                                    <div class="guide-item"><span class="grade-marker grade-2">2</span> <strong>Moderate NPDR</strong>: Multiple aneurysms, hemorrhages, hard exudates.</div>
+                                    <div class="guide-item"><span class="grade-marker grade-3">3</span> <strong>Severe NPDR</strong>: Extended hemorrhages (>20 in 4 quadrants).</div>
+                                    <div class="guide-item"><span class="grade-marker grade-4">4</span> <strong>Proliferative DR</strong>: Neovascularization, vitreous hemorrhages.</div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SCREEN 2: Analytics Tab -->
+                <section class="dashboard-screen" id="screen-analytics">
+                    <div class="analytics-dashboard">
+                        
+                        <!-- Top Level KPIs -->
+                        <div class="kpi-grid">
+                            <div class="kpi-card glass">
+                                <div class="kpi-icon"><i data-lucide="users"></i></div>
+                                <div class="kpi-data">
+                                    <span class="kpi-title">Total Scans Screened</span>
+                                    <h3 class="kpi-value" id="kpi-screened">1,248</h3>
+                                </div>
+                            </div>
+                            <div class="kpi-card glass">
+                                <div class="kpi-icon color-green"><i data-lucide="check-circle"></i></div>
+                                <div class="kpi-data">
+                                    <span class="kpi-title">Classification Kappa</span>
+                                    <h3 class="kpi-value" id="kpi-kappa">0.9124</h3>
+                                </div>
+                            </div>
+                            <div class="kpi-card glass">
+                                <div class="kpi-icon color-blue"><i data-lucide="focus"></i></div>
+                                <div class="kpi-data">
+                                    <span class="kpi-title">Sensitivity (Recall)</span>
+                                    <h3 class="kpi-value" id="kpi-sensitivity">93.2%</h3>
+                                </div>
+                            </div>
+                            <div class="kpi-card glass">
+                                <div class="kpi-icon color-purple"><i data-lucide="fingerprint"></i></div>
+                                <div class="kpi-data">
+                                    <span class="kpi-title">Specificity</span>
+                                    <h3 class="kpi-value" id="kpi-specificity">95.1%</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Graphical Grid -->
+                        <div class="charts-grid">
+                            <!-- Left: Model Performance Epochs -->
+                            <div class="card glass chart-card">
+                                <div class="card-header">
+                                    <span class="card-title"><i data-lucide="trending-up"></i> Model Training History (Optimized Rounder)</span>
+                                </div>
+                                <div class="chart-wrapper">
+                                    <canvas id="chart-kappa-history"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- Right: DR Distribution -->
+                            <div class="card glass chart-card">
+                                <div class="card-header">
+                                    <span class="card-title"><i data-lucide="pie-chart"></i> Patient Severity Distribution</span>
+                                </div>
+                                <div class="chart-wrapper">
+                                    <canvas id="chart-severity-pie"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Confusion Matrix -->
+                        <div class="card glass confusion-card-panel mt-4">
+                            <div class="card-header">
+                                <span class="card-title"><i data-lucide="grid"></i> Model Confusion Matrix (APTOS 2019 Validation Split)</span>
+                            </div>
+                            <div class="matrix-layout">
+                                <div class="matrix-grid-container">
+                                    <!-- Rendered dynamically -->
+                                    <div id="confusion-matrix-grid"></div>
+                                </div>
+                                <div class="matrix-legend">
+                                    <h4>Matrix Interpretation</h4>
+                                    <p>The rows represent true clinical labels, and the columns represent predicted classes. Deep green squares on the diagonal denote high model accuracy across all classes, including complex Moderate and Severe cases.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- SCREEN 3: Database Tab -->
+                <section class="dashboard-screen" id="screen-database">
+                    <div class="card glass database-card">
+                        <div class="card-header flex-between">
+                            <span class="card-title"><i data-lucide="database"></i> Interactive Screening Database</span>
+                            <div class="table-search">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="search-patients" placeholder="Search patients by name or ID...">
+                            </div>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="clinical-table">
+                                <thead>
+                                    <tr>
+                                        <th>Patient ID</th>
+                                        <th>Name</th>
+                                        <th>Demographics</th>
+                                        <th>Screening Date</th>
+                                        <th>Diagnosis</th>
+                                        <th>Confidence</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="patient-table-body">
+                                    <!-- Filled dynamically from mockData.js -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Application Script Engine Entrypoint -->
+    <script type="module" src="/static/js/app.js"></script>
+
+</body>
+</html>
