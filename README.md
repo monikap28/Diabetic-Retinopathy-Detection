@@ -133,7 +133,7 @@ This repository focuses on:
 
 * Grad-CAM heatmap visualization
 * Multi-class diabetic retinopathy severity classification
-* Cloud deployment
+* Model integration 
 
 ## License
 
